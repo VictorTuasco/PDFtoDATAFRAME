@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pypdf.iml" filepath="$PROJECT_DIR$/.idea/pypdf.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/PDFtoDATAFRAME.iml" filepath="$PROJECT_DIR$/.idea/PDFtoDATAFRAME.iml" />
     </modules>
   </component>
 </project>
