@@ -1,42 +1,47 @@
+import pprint
+
 import PyPDF2
-import textract
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+import re
 import pandas as pd
 
-import pandas as pd
 
-pdffile = open('Faturamento GOOffices-maio-2023.pdf', 'rb')
+pdffile = open('Diario_3681__13_3_2023.pdf', 'rb')
 
 pdfreader = PyPDF2.PdfReader(pdffile)
 
 num_pages = len(pdfreader.pages)
-count = 0
+count = 2067
 text = ""
 
-while count < num_pages:
-    pageObj = pdfreader.pages[count]
-    count += 1
-    text += pageObj.extract_text()
+while count < 2090:
+  pageObj = pdfreader.pages[count]
+  count += 1
+  print(str(count))
+  text += pageObj.extract_text()
 
 textoseparado = text.split('\n')
+lista_linhas = []
+dict_processo = {}
+i = 0
+processo = ''
+for j, lines in enumerate(textoseparado):
+    if 'Processo Nº ATOrd' in lines and i == 0:
+        processo = lines + ' $$ ' + str(j)
+        i = 1
+    elif i == 1:
+        lista_linhas.append([lines])
+        dict_processo[processo] = lista_linhas
+        if 'PODER JUDICIÁRIO' in lines:
+            i = 0
+            lista_linhas =[]
 
-lista_cliente = []
-lista_descricao = []
-for i, item in enumerate(textoseparado):
-    if 'Vencimento:' in item:
-        if 'Atenção:' in textoseparado[i - 1]:
-            lista_cliente.append(textoseparado[i - 2])
-        else:
-            lista_cliente.append(textoseparado[i - 1])
-    if 'Valor Final' in item:
-        for j, cliente in enumerate(lista_cliente):
-            lista_descricao = [textoseparado[textoseparado.index(cliente):j]]
+pprint.pprint(dict_processo)
 
-print (lista_descricao)
-
-#tokens = word_tokenize(text)
-#punctuations = ['(',')',';',':','[',']',',']
-#stop_words = stopwords.words('english')
-#keywords = [word for word in tokens if not word in stop_words and not word in punctuations]
-#print(keywords)
+#
+# for key in dict_processo:
+#     print(key, dict_processo[key])
+#     for item in dict_processo[key]:
+#         if 'AUTOR' in item[0]:
+#             item[0] = item[0].replace('AUTOR ', '')
+#
+#             print(item)
