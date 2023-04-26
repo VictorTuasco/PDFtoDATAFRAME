@@ -1,5 +1,4 @@
 import pprint
-
 import PyPDF2
 import re
 import pandas as pd
@@ -29,19 +28,37 @@ for j, lines in enumerate(textoseparado):
         processo = lines + ' $$ ' + str(j)
         i = 1
     elif i == 1:
-        lista_linhas.append([lines])
-        dict_processo[processo] = lista_linhas
+        lista_linhas.append(lines)
         if 'PODER JUDICIÁRIO' in lines:
+            lista_linhas.pop()
+            texto = ' '. join(lista_linhas)
+            lista_linhas= []
+            lista_linhas.append(texto)
+            dict_processo[processo] = lista_linhas
             i = 0
             lista_linhas =[]
 
-pprint.pprint(dict_processo)
 
-#
-# for key in dict_processo:
-#     print(key, dict_processo[key])
-#     for item in dict_processo[key]:
-#         if 'AUTOR' in item[0]:
-#             item[0] = item[0].replace('AUTOR ', '')
-#
-#             print(item)
+# pprint.pprint(dict_processo)
+
+for key in dict_processo:
+    substring = []
+    padrao = re.compile(r'(AUTOR|ADVOGADO|RÉU|TESTEMUNHA)')
+    resultado = re.finditer(padrao, dict_processo[key][0])
+    for match in resultado:
+        start = match.end()
+        try:
+            end = next(resultado).start()
+        except:
+            end = None
+        substring.append([match.group() + dict_processo[key][0][start:end]])
+
+    dict_processo[key] = substring
+    print(key)
+    print(substring)
+    print('-'*100)
+
+
+    # dict_processo[key] = condensado
+    # print(condensado)
+# pprint.pprint(dict_processo)
