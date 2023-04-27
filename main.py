@@ -87,7 +87,6 @@ dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
 dicionario_processos = pegar_processos_um_adv(dicionario_processos)
 
 
-# df = pd.DataFrame([(key, *val) for key, values in dicionario_processos.items() for val in values], columns=['key', 'col1'])
 lista_valores = []
 for key, values in dicionario_processos.items():
     for val in values:
