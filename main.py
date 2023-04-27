@@ -1,6 +1,8 @@
 import pprint
 import PyPDF2
 import re
+
+import numpy as np
 import pandas as pd
 
 def ler_tranformar_pdftotexto(pdf):
@@ -63,10 +65,37 @@ def transformar_texto_dict_processos_partes(texto):
     return dict_processo
 
 
+def pegar_processos_um_adv(dicionario):
+    keys_to_remove = []
+    for key, value in dicionario.items():
+        count = 0
+        for item in value:
+            if "ADVOGADO" in item[0]:
+                count += 1
+        if count > 1:
+            keys_to_remove.append(key)
+
+    for key in keys_to_remove:
+        del dicionario[key]
+
+    return dicionario
+
+
 
 textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
 dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
+dicionario_processos = pegar_processos_um_adv(dicionario_processos)
 
-df = pd.DataFrame([(key, *val) for key, values in dicionario_processos.items() for val in values])
+
+# df = pd.DataFrame([(key, *val) for key, values in dicionario_processos.items() for val in values], columns=['key', 'col1'])
+lista_valores = []
+for key, values in dicionario_processos.items():
+    for val in values:
+        tupla_valores = (key, *val)
+        lista_valores.append(tupla_valores)
+    lista_valores.append(('-' *80, '-' *80))
+df = pd.DataFrame(lista_valores)
+
 print(df)
 df.to_excel('Processos.xlsx', index=False)
+
