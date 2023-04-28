@@ -1,9 +1,14 @@
-import pprint
+import time
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import PyPDF2
 import re
-
-import numpy as np
 import pandas as pd
+
 
 def ler_tranformar_pdftotexto(pdf):
     pdffile = open(pdf, 'rb')
@@ -81,20 +86,70 @@ def pegar_processos_um_adv(dicionario):
     return dicionario
 
 
+# executando as funções
+# textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
+# dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
+# dicionario_processos = pegar_processos_um_adv(dicionario_processos)
+#
+#
+# lista_valores = []
+# for key, values in dicionario_processos.items():
+#     for val in values:
+#         tupla_valores = (key, *val)
+#         lista_valores.append(tupla_valores)
+#     lista_valores.append(('Processo' + '-' * 70, 'Participantes'+ '-' * 70))
+#
+# df = pd.DataFrame(lista_valores, columns= ['Processo', 'Participantes'])
+# df.to_excel('Processos.xlsx', index=False)
+#
+# #pegando somente os reús
+# reu = df[df['Participantes'].str.contains('RÉU')]
+#
+# lista_reus = reu['Participantes'].values + ' && ' + reu['Processo'].values
+#
+# for reu in lista_reus:
+#     print(reu.strip('RÉU')[:reu.find('&&') - 3])
 
-textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
-dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
-dicionario_processos = pegar_processos_um_adv(dicionario_processos)
+def pegando_info_webAPI_nome(lista_nomes):
 
+    servico = Service(ChromeDriverManager().install())
+    navegador = webdriver.Chrome(service=servico)
 
-lista_valores = []
-for key, values in dicionario_processos.items():
-    for val in values:
-        tupla_valores = (key, *val)
-        lista_valores.append(tupla_valores)
-    lista_valores.append(('-' *80, '-' *80))
-df = pd.DataFrame(lista_valores)
+    navegador.get(r'https://www.apinformacao.net.br/access/acesso.php')
+    navegador.find_element('id' , 'login-codigo').send_keys('4645a')
+    navegador.find_element('id', 'login-senha').send_keys('jmadv')
+    navegador.find_element('id', 'btn-login').click()
+    time.sleep(5)
+    navegador.get(r'https://www.apinformacao.net/apinformacao/endtel/index2.php')
+    navegador.find_element('id', 'nome').send_keys('MARCO AURELIO FLORES CARONE')
+    navegador.find_element('name', 'Submit2').click()
+    num_registros = navegador.find_element('xpath', '//*[@id="grid-footer"]/div/div[2]/div/strong/h6').text
+    if '2' not in num_registros:
+        navegador.get(navegador.find_element('xpath', '//*[@id="grid"]/tbody/tr/td[1]/a').get_attribute('href'))
+        time.sleep(5)
+        documento  = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[1]/div[2]').text
+        nome = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[2]').text
+        pai = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[5]/div[2]').text
+        mae = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[4]/div[2]').text
+        titulo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[4]').text
+        sexo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[3]/div[4]').text
+        telefones = navegador.find_elements('class name', 'mr-2')
+        for tel in telefones:
+            print(tel.text)
+        div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
+        for elementos in div_emails:
+            emails = elementos.find_elements('class name','my-1')
+            for email in emails:
+                print(email.text)
+        div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
+        for elementos in div_enderecos:
+            enderecos = elementos.find_elements('class name', 'my-1')
+            for endereco in enderecos:
+                print (endereco.text)
 
-print(df)
-df.to_excel('Processos.xlsx', index=False)
+    else:
+        print ('not ok')
+    time.sleep(100)
+    return
 
+pegando_info_webAPI_nome('teste')
