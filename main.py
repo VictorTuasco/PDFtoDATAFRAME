@@ -1,3 +1,4 @@
+import pprint
 import time
 
 from selenium import webdriver
@@ -17,7 +18,7 @@ def ler_tranformar_pdftotexto(pdf):
     count = 2067
     text = ""
 
-    while count < 3269:
+    while count < 4269:
         pageObj = pdfreader.pages[count]
         count += 1
         print(str(count))
@@ -86,70 +87,94 @@ def pegar_processos_um_adv(dicionario):
     return dicionario
 
 
-# executando as funções
-# textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
-# dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
-# dicionario_processos = pegar_processos_um_adv(dicionario_processos)
-#
-#
-# lista_valores = []
-# for key, values in dicionario_processos.items():
-#     for val in values:
-#         tupla_valores = (key, *val)
-#         lista_valores.append(tupla_valores)
-#     lista_valores.append(('Processo' + '-' * 70, 'Participantes'+ '-' * 70))
-#
-# df = pd.DataFrame(lista_valores, columns= ['Processo', 'Participantes'])
-# df.to_excel('Processos.xlsx', index=False)
-#
-# #pegando somente os reús
-# reu = df[df['Participantes'].str.contains('RÉU')]
-#
-# lista_reus = reu['Participantes'].values + ' && ' + reu['Processo'].values
-#
-# for reu in lista_reus:
-#     print(reu.strip('RÉU')[:reu.find('&&') - 3])
-
 def pegando_info_webAPI_nome(lista_nomes):
-
+    dict_info_pessoa = {}
     servico = Service(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico)
 
     navegador.get(r'https://www.apinformacao.net.br/access/acesso.php')
     navegador.find_element('id' , 'login-codigo').send_keys('4645a')
     navegador.find_element('id', 'login-senha').send_keys('jmadv')
+    time.sleep(5)
     navegador.find_element('id', 'btn-login').click()
     time.sleep(5)
-    navegador.get(r'https://www.apinformacao.net/apinformacao/endtel/index2.php')
-    navegador.find_element('id', 'nome').send_keys('MARCO AURELIO FLORES CARONE')
-    navegador.find_element('name', 'Submit2').click()
-    num_registros = navegador.find_element('xpath', '//*[@id="grid-footer"]/div/div[2]/div/strong/h6').text
-    if '2' not in num_registros:
-        navegador.get(navegador.find_element('xpath', '//*[@id="grid"]/tbody/tr/td[1]/a').get_attribute('href'))
-        time.sleep(5)
-        documento  = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[1]/div[2]').text
-        nome = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[2]').text
-        pai = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[5]/div[2]').text
-        mae = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[4]/div[2]').text
-        titulo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[4]').text
-        sexo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[3]/div[4]').text
-        telefones = navegador.find_elements('class name', 'mr-2')
-        for tel in telefones:
-            print(tel.text)
-        div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
-        for elementos in div_emails:
-            emails = elementos.find_elements('class name','my-1')
-            for email in emails:
-                print(email.text)
-        div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
-        for elementos in div_enderecos:
-            enderecos = elementos.find_elements('class name', 'my-1')
-            for endereco in enderecos:
-                print (endereco.text)
+    for nome in lista_nomes:
+        nome = nome[4:]
+        navegador.get(r'https://www.apinformacao.net/apinformacao/endtel/index2.php')
+        navegador.find_element('id', 'nome').send_keys(nome)
+        navegador.find_element('name', 'Submit2').click()
+        try:
+            num_registros = navegador.find_element('xpath', '//*[@id="grid"]/tbody')
+            num_registros = num_registros.find_elements('tag name', 'tr')
+        except:
+            continue
+        if len(num_registros) == 1:
+            try:
+                navegador.get(navegador.find_element('xpath', '//*[@id="grid"]/tbody/tr/td[1]/a').get_attribute('href'))
+                time.sleep(3)
+                documento  = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[1]/div[2]').text
+                if '/0' in documento:
+                    continue
+                dict_info_pessoa[nome] = {'Nome': nome}
+                dict_info_pessoa[nome]['Documento'] = documento
+                # nome = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[2]').text
+                # pai = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[5]/div[2]').text
+                # dict_info_pessoa[nome]['Nome do Pai'] = pai
+                # mae = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[4]/div[2]').text
+                # dict_info_pessoa[nome]['Nome da Mãe'] = mae
+                titulo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[4]').text
+                dict_info_pessoa[nome]['Titulo de Eleitor'] = titulo
+                sexo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[3]/div[4]').text
+                dict_info_pessoa[nome]['Sexo'] = sexo
+                telefones = navegador.find_elements('class name', 'mr-2')
+                list_tel = []
+                for tel in telefones:
+                    list_tel.append(tel.text)
+                dict_info_pessoa[nome]['Telefone']  = list_tel
+                div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
+                list_email = []
+                for elementos in div_emails:
+                    emails = elementos.find_elements('class name','my-1')
+                    for email in emails:
+                        list_email.append(email.text)
+                dict_info_pessoa[nome]['Emails'] = list_email
+                div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
+                list_endereco = []
+                for elementos in div_enderecos:
+                    enderecos = elementos.find_elements('class name', 'my-1')
+                    for endereco in enderecos:
+                        list_endereco.append(endereco.text)
+                dict_info_pessoa[nome]['Endereço'] =  list_endereco
+            except:
+                continue
+        else:
+            print ('not ok')
+            continue
 
-    else:
-        print ('not ok')
-    time.sleep(100)
-    return
+    return dict_info_pessoa
 
-pegando_info_webAPI_nome('teste')
+
+
+# executando as funções
+textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
+dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
+dicionario_processos = pegar_processos_um_adv(dicionario_processos)
+
+
+lista_valores = []
+for key, values in dicionario_processos.items():
+    for val in values:
+        tupla_valores = (key, *val)
+        lista_valores.append(tupla_valores)
+    lista_valores.append(('Processo' + '-' * 70, 'Participantes'+ '-' * 70))
+
+df = pd.DataFrame(lista_valores, columns= ['Processo', 'Participantes'])
+df.to_excel('Processos.xlsx', index=False)
+
+#pegando somente os reús
+reu = df[df['Participantes'].str.contains('RÉU')]
+lista_reus = reu['Participantes'].values #+ ' && ' + reu['Processo'].values
+
+df = pd.DataFrame(pegando_info_webAPI_nome(lista_reus))
+df = df.T
+df.to_excel('Teste lead.xlsx', index=False)
