@@ -15,10 +15,10 @@ def ler_tranformar_pdftotexto(pdf):
     pdffile = open(pdf, 'rb')
     pdfreader = PyPDF2.PdfReader(pdffile)
     num_pages = len(pdfreader.pages)
-    count = 2067
+    count = 1
     text = ""
 
-    while count < 4269:
+    while count < num_pages:
         pageObj = pdfreader.pages[count]
         count += 1
         print(str(count))
@@ -87,7 +87,7 @@ def pegar_processos_um_adv(dicionario):
     return dicionario
 
 
-def pegando_info_webAPI_nome(lista_nomes):
+def pegando_info_webAPI_nome(lista_nomes, lista_processo):
     dict_info_pessoa = {}
     servico = Service(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico)
@@ -98,8 +98,8 @@ def pegando_info_webAPI_nome(lista_nomes):
     time.sleep(5)
     navegador.find_element('id', 'btn-login').click()
     time.sleep(5)
-    for nome in lista_nomes:
-        nome = nome[4:]
+    for i, nome in enumerate(lista_nomes):
+        nome = nome[4:44]
         navegador.get(r'https://www.apinformacao.net/apinformacao/endtel/index2.php')
         navegador.find_element('id', 'nome').send_keys(nome)
         navegador.find_element('name', 'Submit2').click()
@@ -144,11 +144,13 @@ def pegando_info_webAPI_nome(lista_nomes):
                     enderecos = elementos.find_elements('class name', 'my-1')
                     for endereco in enderecos:
                         list_endereco.append(endereco.text)
-                dict_info_pessoa[nome]['Endereço'] =  list_endereco
+                dict_info_pessoa[nome]['Endereço'] = list_endereco
+                dict_info_pessoa[nome]['Processo'] = lista_processo[i]
+
             except:
                 continue
         else:
-            print ('not ok')
+            # print ('not ok')
             continue
 
     return dict_info_pessoa
@@ -156,7 +158,7 @@ def pegando_info_webAPI_nome(lista_nomes):
 
 
 # executando as funções
-textopdf = ler_tranformar_pdftotexto('Diario_3681__13_3_2023.pdf')
+textopdf = ler_tranformar_pdftotexto('Diario.pdf')
 dicionario_processos = transformar_texto_dict_processos_partes(textopdf)
 dicionario_processos = pegar_processos_um_adv(dicionario_processos)
 
@@ -173,8 +175,10 @@ df.to_excel('Processos.xlsx', index=False)
 
 #pegando somente os reús
 reu = df[df['Participantes'].str.contains('RÉU')]
-lista_reus = reu['Participantes'].values #+ ' && ' + reu['Processo'].values
+lista_reus = reu['Participantes'].values
+lista_processos = reu['Processo'].values
 
-df = pd.DataFrame(pegando_info_webAPI_nome(lista_reus))
+
+df = pd.DataFrame(pegando_info_webAPI_nome(lista_reus, lista_processos))
 df = df.T
-df.to_excel('Teste lead.xlsx', index=False)
+df.to_excel('Lead.xlsx', index=False)
