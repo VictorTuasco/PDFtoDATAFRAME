@@ -1,6 +1,6 @@
-import pprint
+import sys
+import datetime
 import time
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -9,21 +9,22 @@ from selenium.webdriver.common.keys import Keys
 import PyPDF2
 import re
 import pandas as pd
+from tqdm import tqdm
 
+
+data_atual = datetime.datetime.now().strftime('%Y-%m-%d')
 
 def ler_tranformar_pdftotexto(pdf):
     pdffile = open(pdf, 'rb')
     pdfreader = PyPDF2.PdfReader(pdffile)
     num_pages = len(pdfreader.pages)
-    count = 1
     text = ""
 
-    while count < num_pages:
+    for count in tqdm(range(1, num_pages)):
         pageObj = pdfreader.pages[count]
-        count += 1
-        print(str(count))
         text += pageObj.extract_text()
-        textoseparado = text.split('\n')
+
+    textoseparado = text.split('\n')
     return textoseparado
 
 
@@ -89,6 +90,7 @@ def pegar_processos_um_adv(dicionario):
 
 def pegando_info_webAPI_nome(lista_nomes, lista_processo):
     dict_info_pessoa = {}
+    dict_info_empresa = {}
     servico = Service(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico)
 
@@ -113,47 +115,75 @@ def pegando_info_webAPI_nome(lista_nomes, lista_processo):
                 navegador.get(navegador.find_element('xpath', '//*[@id="grid"]/tbody/tr/td[1]/a').get_attribute('href'))
                 time.sleep(3)
                 documento  = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[1]/div[2]').text
-                if '/0' in documento:
-                    continue
-                dict_info_pessoa[nome] = {'Nome': nome}
-                dict_info_pessoa[nome]['Documento'] = documento
-                # nome = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[2]').text
-                # pai = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[5]/div[2]').text
-                # dict_info_pessoa[nome]['Nome do Pai'] = pai
-                # mae = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[4]/div[2]').text
-                # dict_info_pessoa[nome]['Nome da Mãe'] = mae
-                titulo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[4]').text
-                dict_info_pessoa[nome]['Titulo de Eleitor'] = titulo
-                sexo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[3]/div[4]').text
-                dict_info_pessoa[nome]['Sexo'] = sexo
-                telefones = navegador.find_elements('class name', 'mr-2')
-                list_tel = []
-                for tel in telefones:
-                    list_tel.append(tel.text)
-                dict_info_pessoa[nome]['Telefone']  = list_tel
-                div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
-                list_email = []
-                for elementos in div_emails:
-                    emails = elementos.find_elements('class name','my-1')
-                    for email in emails:
-                        list_email.append(email.text)
-                dict_info_pessoa[nome]['Emails'] = list_email
-                div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
-                list_endereco = []
-                for elementos in div_enderecos:
-                    enderecos = elementos.find_elements('class name', 'my-1')
-                    for endereco in enderecos:
-                        list_endereco.append(endereco.text)
-                dict_info_pessoa[nome]['Endereço'] = list_endereco
-                dict_info_pessoa[nome]['Processo'] = lista_processo[i]
+                if '/0' in documento: #tratar empresas
+                    dict_info_empresa[nome] = {'Empresa': nome}
+                    dict_info_empresa[nome]['CNPJ'] = documento
+                    # nome_fantasia = navegador.find_element('xpath', '//*[@id="SC2019"]/div/div[3]/div[2]').text
+                    # dict_info_empresa[nome]['Nome Fantasia'] = nome_fantasia
+                    # natureza =  navegador.find_element('xpath', '//*[@id="SC2019"]/div/div[6]/div[2]').text
+                    # dict_info_empresa[nome]['Natureza'] = natureza
+                    condicao =  navegador.find_element('xpath', '//*[@id="SC2019"]/div/div[1]/div[4]').text
+                    dict_info_empresa[nome]['Condição'] = condicao
+                    telefones = navegador.find_elements('class name', 'mr-2')
+                    list_tel = []
+                    for tel in telefones:
+                        list_tel.append(tel.text)
+                    dict_info_empresa[nome]['Telefone']  = list_tel
+                    div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
+                    list_email = []
+                    for elementos in div_emails:
+                        emails = elementos.find_elements('class name','my-1')
+                        for email in emails:
+                            list_email.append(email.text)
+                    dict_info_empresa[nome]['Emails'] = list_email
+                    div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
+                    list_endereco = []
+                    for elementos in div_enderecos:
+                        enderecos = elementos.find_elements('class name', 'my-1')
+                        for endereco in enderecos:
+                            list_endereco.append(endereco.text)
+                    dict_info_empresa[nome]['Endereço'] = list_endereco
+                    dict_info_empresa[nome]['Processo'] = lista_processo[i]
+                else:
+                    dict_info_pessoa[nome] = {'Nome': nome}
+                    dict_info_pessoa[nome]['Documento'] = documento
+                    # nome = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[2]').text
+                    # pai = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[5]/div[2]').text
+                    # dict_info_pessoa[nome]['Nome do Pai'] = pai
+                    # mae = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[4]/div[2]').text
+                    # dict_info_pessoa[nome]['Nome da Mãe'] = mae
+                    titulo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[2]/div[4]').text
+                    dict_info_pessoa[nome]['Titulo de Eleitor'] = titulo
+                    sexo = navegador.find_element('xpath', '//*[@id="return_1"]/div/div/div[3]/div[4]').text
+                    dict_info_pessoa[nome]['Sexo'] = sexo
+                    telefones = navegador.find_elements('class name', 'mr-2')
+                    list_tel = []
+                    for tel in telefones:
+                        list_tel.append(tel.text)
+                    dict_info_pessoa[nome]['Telefone']  = list_tel
+                    div_emails = navegador.find_elements('xpath' , '//*[@id="consulta_4"]/div[2]')
+                    list_email = []
+                    for elementos in div_emails:
+                        emails = elementos.find_elements('class name','my-1')
+                        for email in emails:
+                            list_email.append(email.text)
+                    dict_info_pessoa[nome]['Emails'] = list_email
+                    div_enderecos = navegador.find_elements('xpath', '//*[@id="return_6"]/div/div')
+                    list_endereco = []
+                    for elementos in div_enderecos:
+                        enderecos = elementos.find_elements('class name', 'my-1')
+                        for endereco in enderecos:
+                            list_endereco.append(endereco.text)
+                    dict_info_pessoa[nome]['Endereço'] = list_endereco
+                    dict_info_pessoa[nome]['Processo'] = lista_processo[i]
 
             except:
                 continue
         else:
-            # print ('not ok')
             continue
 
-    return dict_info_pessoa
+    navegador.quit()
+    return dict_info_pessoa, dict_info_empresa
 
 
 
@@ -171,7 +201,7 @@ for key, values in dicionario_processos.items():
     lista_valores.append(('Processo' + '-' * 70, 'Participantes'+ '-' * 70))
 
 df = pd.DataFrame(lista_valores, columns= ['Processo', 'Participantes'])
-df.to_excel('Processos.xlsx', index=False)
+df.to_excel(f'Processos -- {data_atual} -- .xlsx', index=False)
 
 #pegando somente os reús
 reu = df[df['Participantes'].str.contains('RÉU')]
@@ -179,6 +209,11 @@ lista_reus = reu['Participantes'].values
 lista_processos = reu['Processo'].values
 
 
-df = pd.DataFrame(pegando_info_webAPI_nome(lista_reus, lista_processos))
-df = df.T
-df.to_excel('Lead.xlsx', index=False)
+df_pessoa_fisica, df_empresa = pegando_info_webAPI_nome(lista_reus, lista_processos)
+df_pessoa_fisica = pd.DataFrame(df_pessoa_fisica)
+df_empresa = pd.DataFrame(df_empresa)
+df_pessoa_fisica = df_pessoa_fisica.T
+df_empresa = df_empresa.T
+df_pessoa_fisica.to_excel(f'Lead_Pessoas_Fisica -- {data_atual} --.xlsx', index=False)
+df_empresa.to_excel(f'Lead_Empresas -- {data_atual} --.xlsx', index=False)
+sys.exit()
