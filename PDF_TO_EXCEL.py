@@ -24,7 +24,8 @@ def ler_tranformar_pdftotexto(pdf):
 
 def pegar_padroes(texto):
     substring = []
-    padrao = re.compile(r'(AUTOR|ADVOGADO|RÉU|TESTEMUNHA|CUSTOS LEGIS|REQUERENTES|PERITO|INTERESSADO)')
+    padrao = re.compile(r'(AUTOR|ADVOGADO|RÉU|TESTEMUNHA|CUSTOS LEGIS|REQUERENTES|PERITO|INTERESSADO|Relator|AGRAVANTE|AGRAVADO|IMPETRANTE'
+                        r'|AUTORIDADE COATORA|RECLAMANTE|RECLAMADO|RECORRENTE|RECORRIDO)')
     resultado = list(re.finditer(padrao, texto))
     for i, match in enumerate(resultado):
         start = match.end()
